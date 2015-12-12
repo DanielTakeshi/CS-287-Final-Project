@@ -1,0 +1,427 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%2345678901234567890123456789012345678901234567890123456789012345678901234567890
+%        1         2         3         4         5         6         7         8
+
+\documentclass[letterpaper, 10 pt, conference]{ieeeconf}  % Comment this line out if you need a4paper
+%\documentclass[a4paper, 10pt, conference]{ieeeconf}      % Use this line for a4 paper
+\IEEEoverridecommandlockouts                              % This command is only needed if 
+                                                          % you want to use the \thanks command
+\overrideIEEEmargins                                      % Needed to meet printer requirements.
+
+% See the \addtolength command later in the file to balance the column lengths
+% on the last page of the document
+
+% The following packages can be found on http:\\www.ctan.org
+\usepackage{graphics} % for pdf, bitmapped graphics files
+\usepackage{epsfig} % for postscript graphics files
+\usepackage{mathptmx} % assumes new font selection scheme installed
+\usepackage{times} % assumes new font selection scheme installed
+\usepackage{amsmath} % assumes amsmath package installed
+\usepackage{amssymb}  % assumes amsmath package installed
+\usepackage{url}
+
+\title{\LARGE \bf
+Human Learning vs. Deep Learning for Atari Games
+}
+
+\author{Daniel Seita$^{1}$% <-this % stops a space
+\thanks{$^{1}$University of California, Berkeley, USA. {\tt\small seita@berkeley.edu}}%
+}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\pagestyle{empty}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{abstract}
+
+The combination of reinforcement learning and deep learning has led to impressive results in
+training AI agents to play Atari games. Nonetheless, there is still much room for improvement,
+especially for Atari games that require substantial long-term strategy, and the entire process of
+how and what neural networks learn is poorly understood. In this paper, we augment the current
+understanding of neural network based agents by collecting data from humans playing Atari games. We
+use knowledge derived from human game logs to present a different initial exploration policy for AI
+agents to get faster and more accurate state-action value approximations. In addition, we also
+collect various quantitative and qualitative data from the human game play. In doing so, we aim to
+make contributions to the cognitive science process of how humans learn. Our results imply that
+using human data for exploration policies can be beneficial, and that humans learn a variety of
+``optimal'' game strategies despite having trouble with coordination of the game controls.
+
+\end{abstract}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Introduction}\label{sec:intro}
+
+Deep learning has become one of the most popular and fastest growing research subfields of
+artificial intelligence, as evident by the superior performance of (deep) neural networks over
+classical methods in realms such as speech recognition~\cite{speech} and image
+classification~\cite{image_classification}.
+
+It has also been shown that deep learning can be used for challenging tasks in reinforcement
+learning, where the job of an AI agent is not to perform ``simple'' classification, but to learn
+from high-dimensional, correlated data with a scalar reward signal that is noisy and may exhibit
+complicated, long-term rewards. For instance,~\cite{mnih-atari-2013} combined model-free
+reinforcement learning with deep learning techniques to develop an AI agent capable of learning how
+to play several Atari 2600 games at a level matching or exceeding human performance. The AI only
+learned from the game frames and the score, just like how a human would learn.
+
+Nonetheless, despite the progress advanced by neural networks, many questions still remain about how
+exactly neural networks learn, and it is still unclear if this underlying ``process'' is at all
+similar to the way that humans would learn~\cite{szegedy2013intriguing,nguyen2015deep}.  One way to
+bridge the knowledge gap between the learning process of neural network agents and humans is to
+investigate how humans would learn to play these Atari games. In this report, we investigate the
+numerous research questions derived from human learning.
+
+First, it might be possible to augment the learning process of neural network agents with human data
+to accelerate training to get fast, high-quality policies. We train a classifier from game frames to
+actions based on human data, and show that one can incorporate the classifier during the exploration
+phase of the neural network agent, when it is following a $(1-\epsilon)$-greedy policy with high
+$\epsilon$ (i.e., close to one). Rather than have the ``$\epsilon$ cases'' correspond to
+\emph{random} actions, the AI agent can use those cases to follow the \emph{human action}.
+
+Second, it is worthy to try and directly understand the human learning process. To do this, we
+design a task on Amazon Mechanical Turk, where players must play three Atari games (Pong, Breakout,
+and Space Invaders) and answer well-designed survey questions. Furthermore, we use different game
+orderings to test the possibility that transfer learning improves game performance.  We report on
+the quantitative and qualitative results of the survey and make connections with the neural network
+based agents, hoping to ultimately better understand the human learning and deep learning processes
+that enable the corresponding agents to successfully play Atari games.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Background and Related Work}\label{sec:related_work}
+
+This report builds upon the groundbreaking work of~\cite{mnih-atari-2013} and the subsequent
+follow-up~\cite{mnih-dqn-2015}. Both describe a neural network agent that can successfully
+learn control policies for Atari 2600 games. The Arcade Learning
+Environment~\cite{bellemare13arcade} provides the necessary software to test and benchmark agents on
+Atari games, which are a relatively complicated reinforcement learning environment and sufficiently
+diverse enough such that an agent that can play well in a variety of games is likely to have learned
+without hand-engineered features.
+
+To train the agent, they use a variant of Q-learning~\cite{Sutton_1998}. In standard Q-Learning for
+solving a Markov Decision Process, one has state-action values $Q(s,a)$ for state $s$ and action
+$a$. This is the expected sum of discounted rewards for the agent starting at state $s$, taking
+action $a$, and from then on, playing optimally according to the action determined by the policy.
+With Atari games, the states are \emph{sequences} of game frames $x_1,x_2,\ldots,x_t$ encountered
+during game play\footnote{Technically,~\cite{mnih-atari-2013} reports that states are sequences of
+game frames \emph{and} actions: $x_1,a_1,x_2,\ldots,a_t$. When doing Q-Learning, however, their code
+only considers four consecutive frames and, to the best of our knowledge, does not take into account
+actions other than the current one under consideration.}. The optimal action-value function $Q$
+obeys the \emph{Bellman equation} identity: 
+
+\begin{equation}\label{eq:bellman}
+Q(s,a) = \mathbb{E}_{s'}\left[r + \gamma \cdot \max_{a'} Q(s',a') \mid s,a \right].
+\end{equation}
+
+The process of Q-Learning (or more generally, reinforcement learning) is to estimate the Q-values
+using the Bellman equation as an iterative update.
+
+The states are extremely high dimensional; even with downsampling, one frame is an $(84\times
+84)$-dimensional input, and storing all $Q(s,a)$ values explicitly in a table is impractical.
+Therefore, the $Q(s,a)$ values are \emph{approximated} by a neural network parameterized by its
+weights $\theta$, and it is $\theta$ that the Q-Learning algorithm must learn.
+
+In practice,~\cite{mnih-dqn-2015} use a variant of online Q-Learning (with a $(1-\epsilon)$-greedy
+policy for exploration) tailored to the task of Atari games.  The most important differences are:
+
+\begin{itemize}
+    \item They use \emph{experience replay} to store the agent's samples $(s_t,a_t,r_t,s_{t+1})$ at
+    each time step in a dataset. When the Q-Learning algorithm updates $\theta$, it applies updates
+    to a subset of the data. This is in contrast with standard Q-learning which only performs one
+    update for each sample. Advantages include greater data efficiency and breaking the correlation
+    among consecutive samples.
+    \item They use a separate network for generating the targets (i.e., the $r + \gamma \cdot
+    \max_{a'}Q(s',a')$ term in Equation~\ref{eq:bellman}), for the purposes of increasing the
+    algorithm's numerical stability.
+\end{itemize}
+
+The DQN trained with this variant of Q-Learning was able to excel at many Atari games, especially
+fast-paced games with simple rules such as Breakout. It was, however, weak on games such as
+Montezuma's Revenge, which requires substantial long-term strategy.
+
+Recently, there has been a surge of follow-up work for training agents to play Atari games.
+In~\cite{nips-atari-2014}, they augment training using data collected \emph{offline} through the use
+of Monte-Carlo tree search planning. The ``offline player,'' while substantially better than DQN,
+cannot play in real time, but can be used to improve DQN's performance. The work
+of~\cite{schaul2015prioritized} introduces prioritized experience replay to train DQN agents
+faster since the most important transitions would be considered more frequently. This is a variant
+of \emph{prioritized sweeping}~\cite{Moore93prioritizedsweeping}, a well-known technique used in
+planning algorithms to pick the states to update in order of priority.
+In~\cite{stadie2015incentivizing}, they propose more sophisticated exploration policies to improve
+performance on Atari games.
+
+In~\cite{wang2015dueling}, they present a different neural network architecture specialized for
+reinforcement learning, and~\cite{van2015deep} proposes the Double DQN, which mitigates the problem
+of the ``max'' operator using the same values to both select and evaluate an action (thus leading to
+overoptimistic value estimates). At the time of publication, it was the highest-quality DQN
+available. Finally, some follow-up work does not take a direct focus towards improving the baseline
+DQN. For instance,~\cite{tampuu2015multiagent} extends the DQN architecture to \emph{multiagent
+environments} and focuses on what happens when two independent DQN agents are trained for the game
+of Pong.
+
+While there has been much work concerning the technical aspects of DQN and its variants, there has
+not been comparable interest in using data from human game logs. There is, however, a large
+literature in the cognitive science field about human reasoning and learning~\cite{stenninghuman}.
+The aim of this work is to bridge the gap between cognitive science and DQN by analyzing human game
+logs and understanding the connection between human learning versus deep learning.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Design of Experiments}\label{sec:experiments}
+
+We present experiments that achieve the dual goals of (1) describing how humans learn to play Atari
+games, and (2) using the human game log to augment the training process of deep Q-networks.
+
+\subsection{Amazon Mechanical Turk}\label{ssec:human_experiment}
+
+\begin{figure}[t]
+\centering
+%\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\includegraphics[width=3in]{fig_atari_games}
+\caption{The three Atari games we used in this experiment: Pong (left), Breakout (middle), and Space
+Invaders (right). Pong and Breakout are similar in that both use a paddle to hit a ball that bounces
+in the game space. In Space Invaders, the player controls the ship at the bottom and aims to shoot
+at all the other ships.}
+\label{fig:atari}
+\end{figure}
+
+To gather human data in a principled, programmatic way, we implemented a task for workers on Amazon
+Mechanical Turk (AMTurk), which is an online service where people can do tasks in exchange for
+payment. For our AMTurk task, we had players play three of the Atari games: Pong, Breakout, and
+Space Invaders. Figure~\ref{fig:atari} shows example screenshots of the three games.
+
+We selected these three for several reasons. First, all three games are commonly used as benchmarks
+for DQN agents; the original paper that introduced DQN used these three
+games~\cite{mnih-atari-2013}. Second, Pong and Breakout are similar because players control a
+paddle and can move it in one axis (vertically for Pong, horizontally for Breakout) and have to
+hit a moving, bouncing ball. Both games require skillful coordination to hit the
+ball at the correct locations and momentum to get the balls to go in desired directions.
+Consequently, Pong and Breakout may test the effect of transfer learning, which we can evaluate by
+checking the game performances of those players on Pong with or without Breakout experience (so long
+as we have sufficient players to reduce the variance with few players). Finally, Space Invaders is a
+game that DQN performs reasonably well on, but still often loses to human players, and requires
+long-term strategy. It might be worthwhile to see if human data can improve DQN's performance on
+Space Invaders.
+
+For the AMTurk experiment, each player was assigned one of the six possible game orderings so that
+we can evaluate transfer learning. The players played each game for exactly ten minutes. To motivate
+the players to play and get high scores (and to avoid just letting the timer run out without doing
+anything) we set three payment thresholds based off of performance. For each game, players earned
+\$1.00, \$1.50, and \$2.00 for clearing the first, second, and third thresholds, respectively. All
+thresholds were based off of game scores. For instance, Breakout's thresholds were set at 5, 30, and
+90 points for one game episode. The first two thresholds are easy enough for almost all new players
+to play, while the third would require some additional skill or be attainable only for fast
+learners or experienced players.
+
+We told the players which controls to use (the four arrow keys, plus the space bar), but did not
+tell them what they did, with the exception of telling them that the space bar in Breakout allowed
+the ball to appear. We did this because a pilot run indicated that confusion among the space bar was
+a top issue.
+
+We also make the players answer various survey questions to collect qualitative data. We had a set
+of post-game questions that players had to answer right after they played a game. The template was:
+
+\begin{itemize}
+    \item A Likert question: \emph{I played well.}
+    \item A Likert question about a game-specific strategy:
+    \begin{itemize}
+        \item Pong: \emph{It is a good strategy to try and make the ball take an angled path towards the opponent.}
+        \item Breakout: \emph{It is a good strategy to try and clear the board by eliminating one row at a time.}
+        \item S.I.: \emph{It is a good strategy to try and eliminate ships in one column before moving on to another column.}
+    \end{itemize}
+    \item (Free resp.) \emph{What was the final strategy you decided on?}
+    \item (Free resp.) \emph{Was there anything from a previous game in this HIT\footnote{A HIT in AMTurk stands
+    for ``Human Intelligence Task.''} that helped?}
+\end{itemize}
+
+The purpose of the game-specific Likert scale question is to get the players to think about good
+general strategies for this game.
+
+This template of post-game survey questions was asked directly after a game, so players did the
+following in succession: Game 1, post-game survey, Game 2, post-game survey, Game 3, post-game
+survey, and then finalized their task with some general survey questions at the end. At the very
+end, we asked the players if they think they now knew effective strategies for all three games and
+how they would rank their level of expertise in each game (both of these were on a Likert scale).
+Our final question explicitly asked them if they thought they had developed good strategies to play
+all three games. We discuss our results in Section~\ref{ssec:human_results}.
+
+\textbf{TODO Well at least I have something here ... revise it and polish it.}
+
+\subsection{Deep Q-Networks}\label{ssec:dqn_experiment}
+
+While the human survey data and game scores can be used to gain various insights, it is also
+interesting to investigate whether it is useful to incorporate human data in the process of training
+a deep Q-network (DQN). In this section, we discus two applications of using the human data. The
+first would be to change the exploration policy of DQN so that, instead of being a standard
+($1-\epsilon$)-greedy policy, it uses the $\epsilon$ component as being based on the action that a
+human would take, which we learn via a classifier from images (i.e., game frames) to actions. The
+second application would be to run the standard DQN Q-learning algorithm, but run it on the
+\emph{human data}, and see how it compares to the normal DQN. For both experiments, we use code
+based on Nathan Sprague's open-source Python implementation of the Deep Q Learning
+network\footnote{\url{https://github.com/spragunr/deep_q_rl}}.
+
+As reported in~\cite{mnih-dqn-2015}, the DQN algorithm follows a $(1-\epsilon)$-greedy policy. A
+policy is necessary because in active reinforcement learning, the agent needs to explore the state
+space to learn an optimal policy. Their algorithm during training starts with $\epsilon=1$, so the
+DQN agent picks random actions to start. Then $\epsilon$ is gradually reduced to 0.1 after the first
+one million frames, and then fixed thereafter. The reason for high $\epsilon$ at the beginning is so
+that the agent can sufficiently explore the state space, which is a requirement for Q-learning to
+converge and find the optimal policy. Humans, however, do not generally perform random actions when
+first starting to play a game, so it would be interesting to see if, instead of $\epsilon$
+corresponding to random actions, it actually corresponds to an action humans chose. To pick a human
+action, we can take the data from the human game log, which consists of frames and the corresponding
+action. We can train a classifier to classify from images to actions, so that when the agent has a
+frame, to pick an action, it picks the action recommended by the classifier. Since image
+classification is best done with convolutional neural networks (CNNs), we use CNN code based on
+CAFFE~\cite{caffe}.
+
+The other idea, doing Q-Learning on the human data, is possible by following the same DQN algorithm,
+except when sampling mini-batches for updating purposes, we just update it based off of a database
+of human data, rather than the data that the network was exploring. Note that this means the agent
+\emph{does not even have to explore}, because it already has data. Q-Learning is off-policy, so in
+theory, it should still converge to some passable policy.
+
+\textbf{TODO revise this ... and *hopefully* I can actually DO all of this stuff! I actually think
+the Q-Learning on the robot might be very hard to finish in a short amount of time.}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Results}\label{sec:results}
+
+\subsection{Human Experiment Results}\label{ssec:human_results}
+
+\begin{figure}[t]
+\begin{center}
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\end{center}
+\caption{\textbf{TODO Put some boxplots or plots of human scores? Similar to what I had in the
+presentation}. The yellow dot is the \emph{average} DQN score for that game, and the red dot is the
+first author's \emph{average} score.}
+\label{fig:human_results}
+\end{figure}
+
+We deployed our experiment on AMTurk in small sets, so as to not overload our server. We got a total
+of \textbf{TODO} responses, which is less than our goal of 120, and in future work we plan on
+finishing all 120.
+
+First, we report on the raw scores players got. In Figure~\ref{fig:human_results}, we present three
+boxplots of the players' \emph{highest} scores, for each of the three games. We also compare this
+with the average DQN score (from the Nature paper), and the average score of the first author. (The
+reason for using the highest of the players' scores is that they only have ten minutes, to provide a
+reasonably fair comparison.) \textbf{TODO I might have to clarify this a bit.} We see that Pong was
+especially difficult for the players. The score of Pong is calculated as the player score subtracted
+from the computer score, so the scores range from $-21$ (i.e., losing 21 to 0) to $+21$. Breakout
+was also difficult for them. A common complaint about Pong and Breakout was that the controls were
+too difficult. Doing well in those games requires solid coordination in the controls, plus knowing
+how to hit the balls diagonally. Breakout requires a fast reaction time, which is generally not a
+problem for computer players. With Space Invaders, our players had a relatively easier time with the
+controls, and consequently, were able to perform better, with our better players exceeding the
+performance of DQN.
+
+\textbf{TODO discuss transfer learning, briefly}
+
+We also received some interesting comments about the game. Here is a sampling of them (all from
+different players, and non-edited):
+
+\begin{itemize}
+    \item (Pong) \emph{my strategy during this game was an utter disaster throughout the entire
+    phase of play.}
+    \item (Pong) \emph{Breakout helped learn how to hit the ball at an angle}
+    \item (Breakout) \emph{Try to chip out one column then get the ball to go up the column and
+    bounce around the top, hitting all the high point blocks}
+    \item (Space Invaders) \emph{Eliminate most off the lowest aliens first, then concentrate on an
+    outer column}
+    \item (All games) \emph{If there were a way to have better contorl of the paddle, I would try to
+    hit more angular shots in the PONG game. The Atari paddle controller on the old 2600 system made
+    this easily possible. The keyboard controls show weakness [...]}
+\end{itemize}
+
+It is indeed problematic that controls were an issue, but it is difficult to get around that.
+
+\subsection{DQN Experiment Results}\label{ssec:dqn_results}
+
+\begin{figure}[t]
+\begin{center}
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\end{center}
+\caption{\textbf{TODO Now compare human vs dqn results! This should be exciting}}
+\label{fig:dqn_1}
+\end{figure}
+
+\begin{figure}[t]
+\begin{center}
+\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+\end{center}
+\caption{\textbf{TODO Add a second plot with some further comparison. Ideally, I have two DQN plots,
+both testing different things.}}
+\label{fig:dqn_2}
+\end{figure}
+
+\textbf{TODO try to get ANYTHING up here!}
+
+Due to lack of computational power at our disposal, we were unable to run the experiments for as
+long as we wished.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Conclusions}\label{sec:conclusions}
+
+\textbf{TODO elaborate on the importance of the results, once I get them!} 
+
+Straightforward directions for future work include continuing the Amazon Mechanical Turk experiments
+on more human participants, testing on other Atari games, and identifying which DQN settings to use
+to maximize the benefit of human data. Some more elaborate extensions of this work might involve
+running Q-Learning on the human data itself to see if the Q-Learner's policy is as good as what DQN
+learned, and investigating inverse reinforcement learning to propose a pseudo-reward function that
+explains people's behavior in their exploration stages.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section*{Acknowledgments}
+
+We thank Andrew Liu for setting up the Amazon Mechanical Turk experiment.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\addtolength{\textheight}{-12cm}
+% This command serves to balance the column lengths on the last page of the document manually. It
+% shortens the textheight of the last page by a suitable amount.  This command does not take effect
+% until the next page so it should come on the page before the last. Make sure that you do not
+% shorten the textheight too much.
+
+\bibliographystyle{IEEEtran}
+\bibliography{Daniel_Seita_Final_Paper_CS287}
+
+% Daniel: This was their old table code.
+%\begin{table}[h]
+%\caption{An Example of a Table}
+%\label{table_example}
+%\begin{center}
+%\begin{tabular}{|c||c|}
+%\hline
+%One & Two\\
+%\hline
+%Three & Four\\
+%\hline
+%\end{tabular}
+%\end{center}
+%\end{table}
+
+% Daniel: This was their old figure code.
+%\begin{figure}[thpb]
+%\centering
+%\framebox{\parbox{3in}{We suggest that you use a text box to insert a graphic (which is ideally a
+%300 dpi TIFF or EPS file, with all fonts embedded) because, in an document, this method is somewhat
+%more stable than directly inserting a picture.  }}
+%%\includegraphics[scale=1.0]{figurefile}
+%\caption{Inductance of oscillation winding on amorphous
+%magnetic core versus DC bias magnetic field}
+%\label{figurelabel}
+%\end{figure}
+
+
+\end{document}
