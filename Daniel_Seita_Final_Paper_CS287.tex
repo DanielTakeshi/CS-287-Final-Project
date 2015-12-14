@@ -181,7 +181,7 @@ games, and (2) using the human game log to augment the training process of deep 
 \begin{figure}[t]
 \centering
 %\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-\includegraphics[width=3in]{fig_atari_games}
+\includegraphics[width=3.2in]{fig_atari_games}
 \caption{The three Atari games we used in this experiment: Pong (left), Breakout (middle), and Space
 Invaders (right). Pong and Breakout are similar in that both use a paddle to hit a ball that bounces
 in the game space. In Space Invaders, the player controls the ship at the bottom and aims to shoot
@@ -295,12 +295,14 @@ the Q-Learning on the robot might be very hard to finish in a short amount of ti
 \subsection{Human Experiment Results}\label{ssec:human_results}
 
 \begin{figure}[t]
-\begin{center}
-\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-\end{center}
-\caption{\textbf{TODO Put some boxplots or plots of human scores? Similar to what I had in the
-presentation}. The yellow dot is the \emph{average} DQN score for that game, and the red dot is the
-first author's \emph{average} score.}
+\centering
+\includegraphics[width=3.2in]{fig_boxplots_human_results.png}
+\caption{This displays boxplots of our 34 human players' results on the three games, with scores on
+the $y$-axis. The boxes cover the 25th through 75th percentiles. The yellow dot is the
+\emph{average} DQN score for that game, and the red dot is the author's \emph{average} score. Among
+all three plots, there are only three outliers. One is from Pong, where one player lost 21-18 and
+therefore scored -3, and the other two are from Space Invaders, where two different players scored
+4370 and 7015 (!) points.}
 \label{fig:human_results}
 \end{figure}
 
@@ -368,7 +370,7 @@ long as we wished.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Conclusions}\label{sec:conclusions}
+\section{Conclusions and Future Work}\label{sec:conclusions}
 
 \textbf{TODO elaborate on the importance of the results, once I get them!} 
 
