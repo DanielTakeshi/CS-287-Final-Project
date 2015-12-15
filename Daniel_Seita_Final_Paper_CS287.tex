@@ -400,9 +400,7 @@ happening.
 
 In terms of the \emph{I played well} questions, players generally felt that they did not do well in
 Pong or Breakout, which had $13+9$ and $11+7$ people answer some form of disagree, respectively.
-Space Invaders was a different story; $14+11$ people agreed with the fact that they played well. As
-we now discuss by analyzing the answers to the free response questions, the game controls were a
-headache for many players in Pong and Breakout.
+Space Invaders was a different story; $14+11$ people agreed with the fact that they played well.
 
 \begin{table}[t]
 \centering
@@ -427,7 +425,9 @@ Note that ``S.'' is short for ``Strongly'' and ``Dis.'' is short for ``Disagree.
 \label{tab:human_results}
 \end{table}
 
-We now present a sample of some of the responses (from different players) at different points in the
+The reason why players felt they did not do well in Pong or Breakout can be attributed to
+difficulties in using the game controls, which were a common theme of discussion in the free
+response questions. We now present a sample of some of those responses at different points in the
 survey. All responses are non-edited and any grammatical errors are due to the players.
 
 After Pong, two players said:
@@ -483,25 +483,91 @@ the time constraints, but the major difficulty is clearly getting used to the co
 
 \subsection{Neural Network Experiment Results}\label{ssec:nn_results}
 
-Our CNN is implemented and trained using CAFFE~\cite{caffe}.
+\begin{table}[t]
+\centering
+\begin{tabular}{|c||c|c|c|c|c|c|}
+\hline
+  & 0 & 1 & 2 & 3 & 4 & 5 \\
+\hline
+Train & 199934 & 176589 & 80665 & 77749 & 18299 & 20340 \\
+Test  & 49927  & 44354 & 19910 & 19663 & 4548 & 5094 \\
+\hline
+\end{tabular}
+\caption{Distribution of actions for the Space Invaders train/test data. Key: 0 = no action, 1 =
+fire (not moving), 2 = move right, 3 = move left, 4 = fire move right, 5 = fire move left.}
+\label{tab:data_distribution}
+\end{table}
 
-\textbf{TODO Good up to here}
+We build and train a CNN as described in Section~\ref{ssec:nn_experiment} using CAFFE~\cite{caffe}
+on logs from 34 cases of Space Invaders. Our game logs recorded all changes in keystrokes (based on
+arrow keys and the space bar) and at what frames these occurred throughout the game. We also develop
+an image extraction pipeline that can determine the frames the players saw during each game. Using
+that information, we can assign for each frame, the Space Invaders action a particular player chose.
+
+Space Invaders has six actions, as described in Section~\ref{ssec:nn_experiment}.   As expected, the
+action ``0'' (corresponding to doing nothing) composed the vast majority of the actions we computed.
+To make our data distribution more balanced, we performed a simple preprocessing step to randomly
+eliminate half of the ``zero'' cases from the data. The resulting distribution of actions for the
+training and testing data is shown in Table~\ref{tab:data_distribution}.  To get the training and
+testing data, we randomly allocate the full data into training/testing batches so that 80\% of the
+data is in training.
+
+All of our (grayscale) frames were downsampled to $(84\times 84)$. Most players, when playing ten
+minutes of Space Invaders, went through about 35,000 frames, with the exact quantity varying due to
+how some players elected to do nothing after they played a few episodes but before the 10 minutes
+were up (in this case, our log did not track their actions). All together, the training and testing
+data were 16.3GB.
+
+We trained our network on a workstation machine with an NVIDIA GeForce Titan X GPU for 100k
+iterations using momentum stochastic gradient descent. After 100k iterations, our CNN obtained
+60.74\% accuracy. Note that after 10k, 25k, and 50k iterations (for example), the CNN had 50.66\%,
+54.56\%, and 58.9\% accuracy, respectively, perhaps suggesting that minor improvements are possible
+with additional training. That the classifier is able to classify this many images correctly is
+remarkable due to the imbalanced distribution of our actions.
+
+Despite the impressive accuracy of our classifier, there are some obvious steps one might take to
+improve it beyond (or instead of) our one preprocessing step. Some extensions include:
+
+\begin{itemize}
+    \item One can use $(84\times 84\times k)$ input where $k > 1$ is a small integer (e.g., 4 or 5).
+    This might result in more meaningful classification since choosing a reasonable action often
+    depend on knowing a \emph{sequence} of frames.
+    \item One can get rid of the beginning and ending frames for each game. Many players did not do
+    any actions for the first few frames, and several ignored our instructions and did not play for
+    all ten minutes. This would also help to eliminate many of our ``0'' cases.
+    \item One can incorporate a delay of a few frames; upon seeing a frame at time $t$, one could
+    instead choose the action that was selected on frame $t+n$ for a small, positive integer $n$.
+    This might make sense because if players see a frame, delays in reaction time will result in the
+    keystroke happening a few frames later.
+\end{itemize}
 
 Due to lack of computational power at our disposal, we were unable to run the experiments for as
-long as we wished.
+long as we wished, though we have made the trained caffe model file publicly available for reuse at
+a later date.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions and Future Work}\label{sec:conclusions}
 
-\textbf{TODO elaborate on the importance of the results, once I get them!} 
+We conducted an experiment on Amazon Mechanical Turk to augment the current understanding of human
+learning versus deep learning. We identified that humans had great difficulty playing games that
+require experience with controls (Pong and Breakout) but were able to think and learn how to play
+Space Invaders quickly enough so that, even after just ten minutes, the performance is comparable to
+DQN.
+
+We also trained a CNN to map from game frames to human actions, where the data comes from the game
+logs on Amazon Mechanical Turk. Our classifier got over 60 percent accuracy despite challenges
+from our high-dimensional, noisy, and imbalanced data.
 
 Straightforward directions for future work include continuing the Amazon Mechanical Turk experiments
-on more human participants, testing on other Atari games, and identifying which DQN settings to use
-to maximize the benefit of human data. Some more elaborate extensions of this work might involve
-running Q-Learning on the human data itself to see if the Q-Learner's policy is as good as what DQN
-learned, and investigating inverse reinforcement learning to propose a pseudo-reward function that
-explains people's behavior in their exploration stages.
+on more human participants, testing on other Atari games, performing some of the extensions of the
+CNN classifier as discussed in Section~\ref{ssec:nn_results}, and implementing this classifier into
+action in a DQN to improve the exploration policy.
+
+Some more elaborate extensions of this work might involve running Q-Learning on the human data
+itself to see if the Q-Learner's policy is as good as what DQN learned, and investigating inverse
+reinforcement learning to propose a pseudo-reward function that explains people's behavior in their
+exploration stages.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section*{Acknowledgments}
