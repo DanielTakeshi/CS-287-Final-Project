@@ -308,7 +308,6 @@ implementation\footnote{\url{https://github.com/spragunr/deep_q_rl}}.
 
 \subsection{Human Experiment Results}\label{ssec:human_results}
 
-\textbf{I think I'm good up to here.}
 
 \begin{figure}[t]
 \centering
@@ -323,23 +322,35 @@ Invaders, where two different players scored 4370 and 7015 (!) points.}
 \label{fig:human_results}
 \end{figure}
 
-We deployed our experiment on AMTurk in small sets, so as to not overload our server. We got a total
-of \textbf{TODO} responses, which is less than our goal of 120, and in future work we plan on
-finishing all 120.
+For our AMTurk experiment, our goal is to eventually have 120 total responses, with 20 players for
+each of the six valid game orderings to test transfer learning. Due to constraints from our server,
+which cannot handle many players using it, we had to deploy the AMTurk hit in small batches and only
+obtained 34 responses.
 
-First, we report on the raw scores players got. In Figure~\ref{fig:human_results}, we present three
-boxplots of the players' \emph{highest} scores, for each of the three games. We also compare this
-with the average DQN score (from the Nature paper), and the average score of the first author. (The
-reason for using the highest of the players' scores is that they only have ten minutes, to provide a
-reasonably fair comparison.) \textbf{TODO I might have to clarify this a bit.} We see that Pong was
-especially difficult for the players. The score of Pong is calculated as the player score subtracted
-from the computer score, so the scores range from $-21$ (i.e., losing 21 to 0) to $+21$. Breakout
-was also difficult for them. A common complaint about Pong and Breakout was that the controls were
-too difficult. Doing well in those games requires solid coordination in the controls, plus knowing
-how to hit the balls diagonally. Breakout requires a fast reaction time, which is generally not a
-problem for computer players. With Space Invaders, our players had a relatively easier time with the
-controls, and consequently, were able to perform better, with our better players exceeding the
-performance of DQN.
+We first report the players' raw scores. For simplicity, only the \emph{highest} score the players
+got in their ten minutes for a game are considered. Figure~\ref{fig:human_results} presents three
+boxplots of all the high scores. We augment these plots with the \emph{average} DQN score
+(from~\cite{mnih-dqn-2015}), and the \emph{average} score of the first author. Note that for Pong,
+the player plays a computer player and the game ends when one of the two gets 21 points. The score
+for Pong used in this paper is the player's score minus the computer player's score, so if the human
+lost $21-6$ the score we use is $-15$.
+
+There are several immediate observations. First, Pong was especially difficult for our workers, and
+not a single player ended up beating the computer; the closest was a $21-18$ loss. In contrast, DQN
+performs very well (typically winning $19-0$ or $20-0$) and the author noticed a bug in the game
+where, due to various repeated patterns, one can park the player's paddle in a certain spot in the
+board, and the computer player will always hit the ball towards the edge of the human players'
+paddle, resulting in the ball bouncing across the board and past the computer.
+
+Breakout was also challenging, as it requires good coordination skills with using the paddle. (This
+explains why DQN is so much better than all human players in this game, since coordination is not
+generally an issue with computer players.) A common complaint about Pong and Breakout was that the
+controls were too difficult, since players not only had to get used to the controls, but also had to
+learn how to hit balls in a way so that they reach their desired destination.
+
+Controls were less of an issue with Space Invaders, and our workers did relatively well compared to
+DQN (and the first author). A considerable fraction of our players exceeded DQN's performance in
+their ten minutes, with someone even getting a score of 7015.
 
 \begin{figure}[t]
 \centering
@@ -349,36 +360,132 @@ the effect of transfer learning. Legend: ``Pong'' means playing Pong without hav
 played Breakout, ``P.a.B'' means playing Pong (a)fter (B)reakout, ``Breakout'' means playing
 Breakout without having previously played Pong, and ``B.a.P.'' means playing Breakout (a)fter
 (P)ong. The two Pong plots are scaled so that they have the same $y$-axis to facilitate comparison;
-a similar case holds for the Breakout plots. Note that for these results, the ordering of Space
-Invaders is irrelevant.}
+a similar case holds for the Breakout plots. Note that for these results, the time when the players
+played Space Invaders is irrelevant.}
 \label{fig:human_transfer}
 \end{figure}
 
-\textbf{TODO discuss transfer learning, briefly}
+We next discuss the impact, if any, of transfer learning. Since Space Invaders is very different
+from Pong and Breakout, we only investigate the performance of players based on different orderings
+of playing Pong and Breakout. Figure~\ref{fig:human_transfer} shows four box plots of players' high
+scores on Pong and Breakout using four different cases: playing Pong without Breakout experience,
+playing Pong with Breakout experience, playing Breakout without Pong experience, and playing
+Breakout with Pong experience.
 
-We also received some interesting comments about the game. Here is a sampling of them (all from
-different players, and non-edited):
+The plots show that the effect of transfer learning is limited, which is not surprising since each
+plot only represented 17 data points. The results we do have suggest that players do better in Pong
+after Breakout experience, but that players perform \emph{worse} in Breakout despite Pong
+experience.
+
+Next, we report on other statistics we collected. Table~\ref{tab:human_results} concisely represents
+seven of our five-point Likert scale questions, and for each one, the number of players who selected
+a certain answer (from ``Strongly Disagree'' to ``Strongly Agree''). The ``Exp.'' represents the
+Likert question of \emph{I have a lot of gaming experience}. The others are from
+Section~\ref{ssec:human_experiment}: ``P1'' and ``P2'' represent \emph{Pong} and ask \emph{I played
+well} and the game-specific question respectively (for Pong, it was about hitting the ball at an
+angle). A similar case holds for ``B1'' and ``B2'' for Breakout, and then ``SI1'' and ``SI2'' for
+Space Invaders.
+
+The ``Exp.'' row shows that more than half of our players agreed that they had lots of gaming
+experience, which makes sense due to the nature of our hit, and the fact that players who are
+extremely bad at these games would likely not finish the HIT.
+
+The answers for the game-specific questions are particularly interesting for Breakout, which asked
+the player to agree with the following statement: \emph{It is a good strategy to try and clear the
+board by eliminating one row at a time.} This is actually \emph{not} the optimal strategy; the
+easiest way to get lots of points is to break through a \emph{column} through the rows to get the
+ball to hit the back rows. The ``B2'' line shows that there was no consensus answer on this among
+the players, which is probably due to how most players never experienced that ``breakout'' case
+happening.
+
+In terms of the \emph{I played well} questions, players generally felt that they did not do well in
+Pong or Breakout, which had $13+9$ and $11+7$ people answer some form of disagree, respectively.
+Space Invaders was a different story; $14+11$ people agreed with the fact that they played well. As
+we now discuss by analyzing the answers to the free response questions, the game controls were a
+headache for many players in Pong and Breakout.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{|c||c|c|c|c|c|}
+\hline
+  & S. Dis. & Dis. & Undecided & Agree & S. Agree \\
+\hline
+Exp. & 1  & 4 & 2 & 9 & 18  \\
+\hline
+P1 & 13 & 9 & 3 & 7 & 2 \\
+P2 & 1 & 2 & 3 & 11 & 17 \\
+\hline
+B1 & 11 & 7 & 7 & 7 & 2 \\
+B2 & 8 &  7 & 9 & 6 & 4 \\
+\hline
+SI1 & 2 & 4 & 3 & 14 & 11 \\
+SI2 & 4 & 7 & 3 & 12 & 8 \\
+\hline
+\end{tabular}
+\caption{Quantitative results on seven different Likert-scale questions, as detailed in the text.
+Note that ``S.'' is short for ``Strongly'' and ``Dis.'' is short for ``Disagree.''}
+\label{tab:human_results}
+\end{table}
+
+We now present a sample of some of the responses (from different players) at different points in the
+survey. All responses are non-edited and any grammatical errors are due to the players.
+
+After Pong, two players said:
 
 \begin{itemize}
-    \item (Pong) \emph{my strategy during this game was an utter disaster throughout the entire
+    \item \emph{my strategy during this game was an utter disaster throughout the entire
     phase of play.}
-    \item (Pong) \emph{Breakout helped learn how to hit the ball at an angle}
-    \item (Breakout) \emph{Try to chip out one column then get the ball to go up the column and
-    bounce around the top, hitting all the high point blocks}
-    \item (Space Invaders) \emph{Eliminate most off the lowest aliens first, then concentrate on an
-    outer column}
-    \item (All games) \emph{If there were a way to have better contorl of the paddle, I would try to
+    \item \emph{Breakout helped learn how to hit the ball at an angle}
+\end{itemize}
+
+The second comment hints at the possibility of transfer learning.
+
+After Breakout, two players said:
+
+\begin{itemize}
+    \item \emph{The best way to clear the board is by clearing one column, and getting the ball to bounce
+   around from the top down.  I could not implement this strategy because of the controls.} 
+    \item \emph{The game was difficult and the slider was too slow for the ball. Not to mention that
+    it was difficult to control the bounce of the ball and control where it goes so you could
+    eliminate one row at a time.}
+\end{itemize}
+
+Note that the second player (incorrectly) disagrees with the first on the recommended strategy.
+
+After Space Invaders, two players said:
+
+\begin{itemize}
+    \item \emph{Eliminate most off the lowest aliens first, then concentrate on an outer column}
+    \item \emph{I really liked this game as a kid. I did the lower levels first if I could but at
+    the very start I tried to get rid of a column.}
+\end{itemize}
+
+With Space Invaders, we received more strategy-related comments rather than game control complaints.
+Note that the first player recommends the columns after eliminating the lower ships (not aliens),
+but the second seems to suggest that it's best to eliminate a column right at the beginning.
+
+After all three games, we also asked players a post-game survey question as to whether they felt
+that an earlier game had helped them with a late game. Two players said:
+
+\begin{itemize}
+    \item \emph{None of the games seemed related enough where I would need to use info from one of
+    them on the others.}
+    \item \emph{If there were a way to have better contorl of the paddle, I would try to
     hit more angular shots in the PONG game. The Atari paddle controller on the old 2600 system made
     this easily possible. The keyboard controls show weakness [...]}
 \end{itemize}
 
-It is indeed problematic that controls were an issue, but it is difficult to get around that.
+The second player's comment has been cut off for space constraints. Incidentally, that player was
+the one who scored 7015 on Space Invaders.
+
+Overall, we believe that our players had a reasonable understanding of how to play the games given
+the time constraints, but the major difficulty is clearly getting used to the controls.
 
 \subsection{Neural Network Experiment Results}\label{ssec:nn_results}
 
 Our CNN is implemented and trained using CAFFE~\cite{caffe}.
 
-\textbf{TODO try to get ANYTHING up here!}
+\textbf{TODO Good up to here}
 
 Due to lack of computational power at our disposal, we were unable to run the experiments for as
 long as we wished.
