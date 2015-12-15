@@ -207,14 +207,15 @@ We selected these three for several reasons. First, they are all commonly used a
 for DQN agents; the original paper that introduced DQN used these three
 games~\cite{mnih-atari-2013}. Second, Pong and Breakout are similar because players control a
 paddle and can move it in one axis (vertically for Pong, horizontally for Breakout) and have to
-hit a moving, bouncing ball. Both games require skillful coordination to hit the
-ball at the correct locations and momentum to get the balls to go in desired directions.
+hit a moving, bouncing ball. Both games require skillful coordination to make the balls go in
+desired directions.
+
 Consequently, Pong and Breakout may test the effect of transfer learning, which we can evaluate by
-checking the game performances of those players on Pong with or without Breakout experience (so long
-as we have sufficient players to reduce the variance with few players). Finally, Space Invaders is a
-game that DQN performs reasonably well on, but still often loses to human players, and requires
-long-term strategy. It might be worthwhile to start exploring the question as to whether human data
-can improve DQN's performance on Space Invaders.
+comparing the Pong game performances of players with and without Breakout experience (so long as we
+have sufficient players to reduce the variance with few players). Finally, Space Invaders is a game
+that DQN performs reasonably well on, but still often loses to human players, and requires long-term
+strategy. It might be worthwhile to start exploring the question as to whether human data can
+improve DQN's performance on Space Invaders.
 
 For the AMTurk experiment, each player was assigned one of the six possible game orderings to 
 evaluate transfer learning. The players played each game for exactly ten minutes. To motivate
@@ -257,8 +258,8 @@ following in succession: Game 1, post-game survey, Game 2, post-game survey, Gam
 survey, and then finalized their task with some general survey questions at the end. At the very
 end, we ask the players if they think they now knew effective strategies for all three games
 (True/False scale) and how they would rank their level of expertise in each game (novice,
-intermediate, expert).  Our final question explicitly asks them if they thought they had developed
-good strategies to play all three games. We discuss our results in Section~\ref{ssec:human_results}.
+intermediate, expert).  Our final question explicitly asks them if they thought a previous game had
+helped them with a later game. We present our results in Section~\ref{ssec:human_results}.
 
 \subsection{Neural Network Classifier}\label{ssec:nn_experiment}
 
@@ -275,31 +276,32 @@ converge to the optimal policy.
 
 Humans, however, do not generally perform random actions when first starting to play a game (i.e.,
 during the ``exploration phase''). It would therefore be interesting to see what would happen to the
-DQN agent during training if the $\epsilon$ cases correspond to actions that a \emph{human} would
-most likely take (rather than being a random action). If a human can quickly learn how to play a
-game well, then the actions he or she takes might help a DQN agent to converge to optimal policies
+DQN agent during training if the $\epsilon$ cases corresponded to actions that a \emph{human} would
+most likely take (rather than a random action). If a human can quickly learn how to play a game
+well, then the actions he or she takes might help a DQN agent to converge to optimal policies
 faster.
 
-To pick an action that a human would likely take, we train a classifier that takes a downsampled
-game frame as input and provides a ranking of actions as output (we only work with the highest
-probability action). We use convolutional neural networks (CNNs) as our classifier due to their
-strong performance on other image classification tasks.  The game log from the AMTurk experiments
-provide the training data since it provides a record of all game frames encountered, along with the
-corresponding keystrokes from the player. The CNN we design is based on the CNN
-from~\cite{mnih-atari-2013}. It takes an $(84\times 84)$ grayscale image as input. The first hidden
-layer convolves 16 $8\times 8$ kernels with stride size 4, then applies max-pooling and the
-rectifier nonlinearity. The second hidden layer convolves 32 $4\times 4$ kernels with stride size 2,
-then applies max-pooling and the rectifier nonlinearity. The third (and final) hidden layer is fully
-connected and has 256 rectifier units. The output layer is a fully connected linear layer with a
-single output for each valid action; the number of valid actions varies depending on the game.
+To pick an action that a human would likely select, we train a classifier that takes a downsampled
+game frame as input and provides the action that the humans took according to the human game log.
+We use convolutional neural networks (CNNs) as our classifier due to their strong performance on
+other image classification tasks.  The game logs from the AMTurk experiments provide the training
+data since they contain a record of all game frames encountered and all corresponding keystrokes.
+
+The CNN we use is based on the CNN from~\cite{mnih-atari-2013}. It takes an $(84\times 84)$
+grayscale image as input. The first hidden layer convolves 16 $8\times 8$ kernels with stride size
+4, then applies max-pooling and the rectifier nonlinearity. The second hidden layer convolves 32
+$4\times 4$ kernels with stride size 2, then applies max-pooling and the rectifier nonlinearity. The
+third (and final) hidden layer is fully connected and has 256 rectifier units. The output layer is a
+fully connected linear layer with a single output for each valid action; the number of valid actions
+varies depending on the game.
 
 Due to time and resource constraints, we only train a CNN for recognizing human actions from game
 frames of the Space Invaders game, leaving Breakout and Pong frame-action classification for future
 work. Space Invaders has six actions: nothing, fire, move-left, move-right, fire-move-left, and
 fire-move-right. We describe our results in Section~\ref{ssec:nn_results}. We did not use this
-classifier for training DQN, again due to time constraints, but our classifier is publicly available
-\footnote{\url{https://github.com/DanielTakeshi/CS-287-Final-Project}} and it is straightforward to
-incorporate it in Nathan Sprague's DQN
+classifier for training DQN, again due to time constraints, but our classifier is publicly
+available\footnote{\url{https://github.com/DanielTakeshi/CS-287-Final-Project}} and it is
+straightforward to incorporate it in Nathan Sprague's DQN
 implementation\footnote{\url{https://github.com/spragunr/deep_q_rl}}.
 
 
@@ -312,12 +314,12 @@ implementation\footnote{\url{https://github.com/spragunr/deep_q_rl}}.
 \begin{figure}[t]
 \centering
 \includegraphics[width=3.2in]{fig_boxplots_human_results.png}
-\caption{This displays boxplots of our 34 human players' results on the three games, with scores on
-the $y$-axis. The boxes cover the 25th through 75th percentiles, with the median indicated by the
-line in the box, and the whiskers go out to the minimum of the maximum element, or 1.5 times the
-IQR of the data. The red dot is the \emph{average} DQN score for that game, and the yellow dot is
-the author's \emph{average} score. Among all three plots, there are only three outliers. One is from
-Pong, where one player lost 21-18 and therefore scored -3, and the other two are from Space
+\caption{This displays boxplots of our 34 human players' high scores on the three games, with scores
+on the $y$-axis. The boxes cover the 25th through 75th percentiles, with the median indicated by the
+line in the box, and the whiskers go out to the minimum of: (1) the maximum element, or (2) 1.5
+times the IQR of the data. The red dots represent DQN's \emph{average} score, and the yellow dots
+are the author's \emph{average} score. Among all three plots, there are only three outliers. One is
+from Pong, where one player lost 21-18 and therefore scored -3, and the other two are from Space
 Invaders, where two different players scored 4370 and 7015 (!) points.}
 \label{fig:human_results}
 \end{figure}
@@ -331,72 +333,72 @@ We first report the players' raw scores. For simplicity, only the \emph{highest}
 got in their ten minutes for a game are considered. Figure~\ref{fig:human_results} presents three
 boxplots of all the high scores. We augment these plots with the \emph{average} DQN score
 (from~\cite{mnih-dqn-2015}), and the \emph{average} score of the first author. Note that for Pong,
-the player plays a computer player and the game ends when one of the two gets 21 points. The score
-for Pong used in this paper is the player's score minus the computer player's score, so if the human
-lost $21-6$ the score we use is $-15$.
+the player plays a computer player and the game ends when one of the two gets 21 points. The scoring
+convention here is to use the player's score minus the computer player's score, so if the human lost
+$21-6$ we would report $-15$.
 
-There are several immediate observations. First, Pong was especially difficult for our workers, and
-not a single player ended up beating the computer; the closest was a $21-18$ loss. In contrast, DQN
-performs very well (typically winning $19-0$ or $20-0$) and the author noticed a bug in the game
-where, due to various repeated patterns, one can park the player's paddle in a certain spot in the
-board, and the computer player will always hit the ball towards the edge of the human players'
-paddle, resulting in the ball bouncing across the board and past the computer.
+There are several immediate observations. First, Pong is especially difficult for our workers, and
+not a single player beat the computer; the closest was a $21-18$ loss. In contrast, DQN performs
+very well (typically winning $21-2$ or $21-1$). Furthermore, the author noticed a bug in Pong where,
+due to repeated patterns, the human can park the player's paddle in a certain spot, and the computer
+player will always hit the ball towards the edge of the human players' paddle, resulting in the ball
+bouncing up and down and going past the computer. Hence, the author always wins $21-0$.
 
-Breakout was also challenging, as it requires good coordination skills with using the paddle. (This
-explains why DQN is so much better than all human players in this game, since coordination is not
-generally an issue with computer players.) A common complaint about Pong and Breakout was that the
-controls were too difficult, since players not only had to get used to the controls, but also had to
-learn how to hit balls in a way so that they reach their desired destination.
+Breakout was also challenging, because using the paddle effectively requires good coordination
+skills.  A common complaint about Pong and Breakout was that the controls were too difficult, since
+players had to quickly learn how to make balls travel in desired directions. (We investigate this in
+more detail later when we list free response answers.) The heavy reliance on controls also explains
+why DQN is so much better than all human players in this game; coordination is not generally an
+issue with computer players.
 
 Controls were less of an issue with Space Invaders, and our workers did relatively well compared to
-DQN (and the first author). A considerable fraction of our players exceeded DQN's performance in
-their ten minutes, with someone even getting a score of 7015.
+DQN (and compared to the author). A considerable fraction of our players exceeded DQN's performance
+in their ten minutes, and one player achieved a remarkable score of 7015.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=3.2in]{fig_boxplots_transfer_learning}
-\caption{This displays boxplots of humans playing Pong and Breakout with various orderings to test
-the effect of transfer learning. Legend: ``Pong'' means playing Pong without having previously
+\caption{This displays boxplots of human high scores on Pong and Breakout with various orderings to
+test the effect of transfer learning. Legend: ``Pong'' means playing Pong without having previously
 played Breakout, ``P.a.B'' means playing Pong (a)fter (B)reakout, ``Breakout'' means playing
 Breakout without having previously played Pong, and ``B.a.P.'' means playing Breakout (a)fter
 (P)ong. The two Pong plots are scaled so that they have the same $y$-axis to facilitate comparison;
 a similar case holds for the Breakout plots. Note that for these results, the time when the players
-played Space Invaders is irrelevant.}
+played Space Invaders is irrelevant and ignored.}
 \label{fig:human_transfer}
 \end{figure}
 
 We next discuss the impact, if any, of transfer learning. Since Space Invaders is very different
-from Pong and Breakout, we only investigate the performance of players based on different orderings
-of playing Pong and Breakout. Figure~\ref{fig:human_transfer} shows four box plots of players' high
-scores on Pong and Breakout using four different cases: playing Pong without Breakout experience,
-playing Pong with Breakout experience, playing Breakout without Pong experience, and playing
-Breakout with Pong experience.
+from Pong and Breakout, we only investigate transfer learning in the context of Pong and Breakout.
+Figure~\ref{fig:human_transfer} shows four box plots of players' high scores on Pong and Breakout
+using four different cases: playing Pong without Breakout experience, playing Pong with Breakout
+experience, playing Breakout without Pong experience, and playing Breakout with Pong experience.
 
-The plots show that the effect of transfer learning is limited, which is not surprising since each
-plot only represented 17 data points. The results we do have suggest that players do better in Pong
-after Breakout experience, but that players perform \emph{worse} in Breakout despite Pong
-experience.
+Each plot only represents 17 data points (i.e., half of our workers), so the results must be taken
+with a grain of salt. The little results we have would suggest the odd conclusion that players do
+better in Pong after Breakout experience, but that players perform \emph{worse} in Breakout despite
+Pong experience.
 
 Next, we report on other statistics we collected. Table~\ref{tab:human_results} concisely represents
 seven of our five-point Likert scale questions, and for each one, the number of players who selected
 a certain answer (from ``Strongly Disagree'' to ``Strongly Agree''). The ``Exp.'' represents the
 Likert question of \emph{I have a lot of gaming experience}. The others are from
-Section~\ref{ssec:human_experiment}: ``P1'' and ``P2'' represent \emph{Pong} and ask \emph{I played
-well} and the game-specific question respectively (for Pong, it was about hitting the ball at an
-angle). A similar case holds for ``B1'' and ``B2'' for Breakout, and then ``SI1'' and ``SI2'' for
-Space Invaders.
+Section~\ref{ssec:human_experiment}: ``P1'' and ``P2'' represent \emph{Pong}. The ``P1'' asks
+\emph{I played well}, and ``P2'' asks the game-specific question, which for Pong was about hitting
+the ball at an angle. A similar case holds for ``B1'' and ``B2'' for Breakout, and then ``SI1'' and
+``SI2'' for Space Invaders.
 
-The ``Exp.'' row shows that more than half of our players agreed that they had lots of gaming
-experience, which makes sense due to the nature of our hit, and the fact that players who are
-extremely bad at these games would likely not finish the HIT.
+The ``Exp.'' row shows that more than half of our players \emph{strongly} agreed that they had lots
+of gaming experience, which makes sense due to the nature of our hit, and the fact that players who
+are extremely bad at these games would likely not finish the HIT.
 
-The answers for the game-specific questions are particularly interesting for Breakout, which asked
+The answers for the game-specific questions are particularly interesting for Breakout, which asks
 the player to agree with the following statement: \emph{It is a good strategy to try and clear the
 board by eliminating one row at a time.} This is actually \emph{not} the optimal strategy; the
-easiest way to get lots of points is to break through a \emph{column} through the rows to get the
-ball to hit the back rows. The ``B2'' line shows that there was no consensus answer on this among
-the players, which is probably due to how most players never experienced that ``breakout'' case
-happening.
+easiest way to get lots of points is to break through a \emph{column} to get the ball to hit the
+back rows, which are worth higher points. The ``B2'' line shows that there was no consensus answer
+on this among the players, which is probably due to how most players never experienced that
+``breakout'' case happening.
 
 In terms of the \emph{I played well} questions, players generally felt that they did not do well in
 Pong or Breakout, which had $13+9$ and $11+7$ people answer some form of disagree, respectively.
@@ -425,7 +427,7 @@ Note that ``S.'' is short for ``Strongly'' and ``Dis.'' is short for ``Disagree.
 \label{tab:human_results}
 \end{table}
 
-The reason why players felt they did not do well in Pong or Breakout can be attributed to
+The reason why players felt they performed poorly in Pong and Breakout can be attributed to
 difficulties in using the game controls, which were a common theme of discussion in the free
 response questions. We now present a sample of some of those responses at different points in the
 survey. All responses are non-edited and any grammatical errors are due to the players.
@@ -450,7 +452,8 @@ After Breakout, two players said:
     eliminate one row at a time.}
 \end{itemize}
 
-Note that the second player (incorrectly) disagrees with the first on the recommended strategy.
+Note that the second player (incorrectly) disagrees with the first on the recommended strategy, and
+was also unable to identify the controls that increase the slider speed.
 
 After Space Invaders, two players said:
 
@@ -475,11 +478,12 @@ that an earlier game had helped them with a late game. Two players said:
     this easily possible. The keyboard controls show weakness [...]}
 \end{itemize}
 
-The second player's comment has been cut off for space constraints. Incidentally, that player was
-the one who scored 7015 on Space Invaders.
+Only half of the second player's comment is listed here due to space constraints. Incidentally, that
+player was the one who scored 7015 on Space Invaders.
 
-Overall, we believe that our players had a reasonable understanding of how to play the games given
-the time constraints, but the major difficulty is clearly getting used to the controls.
+Overall, our players had a reasonable understanding of how to play the games given the time
+constraints, but the major difficulty is clearly getting used to the controls. Also, the full AMTurk
+experiment cost the author \$203.40.
 
 \subsection{Neural Network Experiment Results}\label{ssec:nn_results}
 
@@ -493,45 +497,46 @@ Train & 199934 & 176589 & 80665 & 77749 & 18299 & 20340 \\
 Test  & 49927  & 44354 & 19910 & 19663 & 4548 & 5094 \\
 \hline
 \end{tabular}
-\caption{Distribution of actions for the Space Invaders train/test data. Key: 0 = no action, 1 =
+\caption{Counts of actions for the Space Invaders train/test data. Key: 0 = no action, 1 =
 fire (not moving), 2 = move right, 3 = move left, 4 = fire move right, 5 = fire move left.}
 \label{tab:data_distribution}
 \end{table}
 
 We build and train a CNN as described in Section~\ref{ssec:nn_experiment} using CAFFE~\cite{caffe}
 on logs from 34 cases of Space Invaders. Our game logs recorded all changes in keystrokes (based on
-arrow keys and the space bar) and at what frames these occurred throughout the game. We also develop
-an image extraction pipeline that can determine the frames the players saw during each game. Using
-that information, we can assign for each frame, the Space Invaders action a particular player chose.
+arrow keys and the space bar) and at what frames these occurred throughout the games. We also develop
+an image extraction pipeline that provides the raw frames the players saw during game play.
+Combining this information, we can assign for each frame, the Space Invaders action a particular
+player chose.
 
-Space Invaders has six actions, as described in Section~\ref{ssec:nn_experiment}.   As expected, the
+From Section~\ref{ssec:nn_experiment}, Space Invaders has six valid actions.  As expected, the
 action ``0'' (corresponding to doing nothing) composed the vast majority of the actions we computed.
 To make our data distribution more balanced, we performed a simple preprocessing step to randomly
-eliminate half of the ``zero'' cases from the data. The resulting distribution of actions for the
+eliminate half of the ``0'' cases from the data. The resulting distribution of actions for the
 training and testing data is shown in Table~\ref{tab:data_distribution}.  To get the training and
-testing data, we randomly allocate the full data into training/testing batches so that 80\% of the
-data is in training.
+testing data, we randomly split the full data so that 80\% of the data is in training, the rest in
+testing.
 
 All of our (grayscale) frames were downsampled to $(84\times 84)$. Most players, when playing ten
-minutes of Space Invaders, went through about 35,000 frames, with the exact quantity varying due to
-how some players elected to do nothing after they played a few episodes but before the 10 minutes
-were up (in this case, our log did not track their actions). All together, the training and testing
-data were 16.3GB.
+minutes of Space Invaders, went through about 35,000 frames. The exact quantity varied since some
+players ignored our rules and did not play during some of the ten minutes; in those cases, our log
+would not be able to track their actions. All together, the training and testing data were 16.3GB.
 
 We trained our network on a workstation machine with an NVIDIA GeForce Titan X GPU for 100k
 iterations using momentum stochastic gradient descent. After 100k iterations, our CNN obtained
 60.74\% accuracy. Note that after 10k, 25k, and 50k iterations (for example), the CNN had 50.66\%,
 54.56\%, and 58.9\% accuracy, respectively, perhaps suggesting that minor improvements are possible
 with additional training. That the classifier is able to classify this many images correctly is
-remarkable due to the imbalanced distribution of our actions.
+remarkable since our data is noisy and imbalanced. In addition, the CNN does not always pick one
+action (e.g., the 0 or 1) because that would not let it get 60 percent accuracy.
 
-Despite the impressive accuracy of our classifier, there are some obvious steps one might take to
-improve it beyond (or instead of) our one preprocessing step. Some extensions include:
+Despite the CNN's impressive performance, there are some obvious steps one might take to improve it
+beyond our one preprocessing step. Some extensions include:
 
 \begin{itemize}
     \item One can use $(84\times 84\times k)$ input where $k > 1$ is a small integer (e.g., 4 or 5).
-    This might result in more meaningful classification since choosing a reasonable action often
-    depend on knowing a \emph{sequence} of frames.
+    This might result in more informed decisions since choosing reasonable actions often depends on
+    knowing a \emph{sequence} of frames.
     \item One can get rid of the beginning and ending frames for each game. Many players did not do
     any actions for the first few frames, and several ignored our instructions and did not play for
     all ten minutes. This would also help to eliminate many of our ``0'' cases.
@@ -541,28 +546,29 @@ improve it beyond (or instead of) our one preprocessing step. Some extensions in
     keystroke happening a few frames later.
 \end{itemize}
 
-Due to lack of computational power at our disposal, we were unable to run the experiments for as
-long as we wished, though we have made the trained caffe model file publicly available for reuse at
-a later date.
+Due to lack of time and power at our disposal, we were unable to run the experiments for as long as
+we wished, though we have made the trained caffe model file publicly available for reuse at a later
+date.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Conclusions and Future Work}\label{sec:conclusions}
 
 We conducted an experiment on Amazon Mechanical Turk to augment the current understanding of human
-learning versus deep learning. We identified that humans had great difficulty playing games that
-require experience with controls (Pong and Breakout) but were able to think and learn how to play
-Space Invaders quickly enough so that, even after just ten minutes, the performance is comparable to
-DQN.
+learning versus deep learning. We identified that humans had tremendous difficulty playing games
+requiring skill with controls (Pong and Breakout) but were able to think and learn how to play Space
+Invaders quickly enough so that, even after just ten minutes, the human performance was comparable
+to DQN. There was also some minor disagreement on the optimal strategy for each game, though these
+would likely disappear if players had more time.
 
-We also trained a CNN to map from game frames to human actions, where the data comes from the game
-logs on Amazon Mechanical Turk. Our classifier got over 60 percent accuracy despite challenges
-from our high-dimensional, noisy, and imbalanced data.
+We also trained a CNN to map from frames to actions, where the data comes from the game logs on
+Amazon Mechanical Turk. Our classifier obtained over 60 percent accuracy despite challenges from
+high-dimensional, noisy, and imbalanced data.
 
 Straightforward directions for future work include continuing the Amazon Mechanical Turk experiments
-on more human participants, testing on other Atari games, performing some of the extensions of the
-CNN classifier as discussed in Section~\ref{ssec:nn_results}, and implementing this classifier into
-action in a DQN to improve the exploration policy.
+on more human participants, testing on other Atari games, doing some of the suggested extensions of
+the CNN classifier from Section~\ref{ssec:nn_results}, and incorporating it into a DQN to improve
+the exploration policy.
 
 Some more elaborate extensions of this work might involve running Q-Learning on the human data
 itself to see if the Q-Learner's policy is as good as what DQN learned, and investigating inverse
